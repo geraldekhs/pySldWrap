@@ -606,8 +606,9 @@ def generatePartsList(path_asm):
 
     close(path_asm)
 
-    print(f'There are {len(parts_list)} parts in the assembly')
-    print(parts_list)
+    return parts_list
+    #print(f'There are {len(parts_list)} parts in the assembly')
+    #print(parts_list)
 
 
 if __name__ == '__main__':
