@@ -1,8 +1,8 @@
 import shutil
 from pathlib import Path
-
 import win32com.client
 import pythoncom
+import pandas
 
 
 class SW():
@@ -162,6 +162,53 @@ def activate_doc(name):
 
     arg1 = win32com.client.VARIANT(pythoncom.VT_BYREF | pythoncom.VT_I4, 0)
     return sw.app.ActivateDoc3(name, False, 2, arg1)
+
+# * Use Case 1
+# Extract file properties from all parts, put them into an excel file
+# Modify the excel file
+# Use python to extract data from the excel file and modify the data within the part files
+
+# * Use Case 2
+# Changing properties in multiple part files
+# Eg. 10 part files need their project names changed
+
+def get_custom_file_properties(path):
+    """
+    Retrieves all custom file properties of a single file (be it a part or assembly) and possibly edit some custom propreties of that file
+    
+    """
+    
+    model = open_part(path) 
+
+    # Custom properties can be defined at the document or configuration level
+    # Default configuration is being used
+    configuration = 'Default'
+    custom_property_manager = model.Extension.CustomPropertyManager(configuration)
+
+    num_properties = custom_property_manager.Count
+
+    # *Steps
+    # GetAll3: gets all custom properties; returns array of values for each property
+    # GetType2: for each custom property, print its name, type, and evaluated value
+
+    '''
+    Arg1: Property Names
+    Arg2: Property Types
+    Arg3: Property Values
+    Arg4: Is property resolved?
+    Arg5: Is property linked? 
+    
+    '''
+    arg1 = win32com.client.VARIANT(pythoncom.VT_BYREF | pythoncom.VT_VARIANT, [])
+    arg2 = win32com.client.VARIANT(pythoncom.VT_BYREF | pythoncom.VT_VARIANT, [])
+    arg3 = win32com.client.VARIANT(pythoncom.VT_BYREF | pythoncom.VT_VARIANT, [])
+    arg4 = win32com.client.VARIANT(pythoncom.VT_BYREF | pythoncom.VT_VARIANT, [])
+    arg5 = win32com.client.VARIANT(pythoncom.VT_BYREF | pythoncom.VT_VARIANT, [])
+
+    # Call the GetAll3 function
+    result = custom_property_manager.GetAll3(arg1, arg2, arg3, arg4, arg5)
+
+    return arg1, arg2, arg3, arg4, arg5
 
 
 def save_model(model):
