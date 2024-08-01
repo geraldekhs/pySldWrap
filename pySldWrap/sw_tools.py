@@ -121,6 +121,8 @@ def close(name):
         name (str): the filename of the part or assembly, can also be a Path object
     """
 
+    name = name.split('/')[-1]
+
     if isinstance(name, Path):
         name = name.name
 
