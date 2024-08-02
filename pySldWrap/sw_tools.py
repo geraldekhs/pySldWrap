@@ -163,15 +163,6 @@ def activate_doc(name):
     arg1 = win32com.client.VARIANT(pythoncom.VT_BYREF | pythoncom.VT_I4, 0)
     return sw.app.ActivateDoc3(name, False, 2, arg1)
 
-# * Use Case 1
-# Extract file properties from all parts, put them into an excel file
-# Modify the excel file
-# Use python to extract data from the excel file and modify the data within the part files
-
-# * Use Case 2
-# Changing properties in multiple part files
-# Eg. 10 part files need their project names changed
-
 def get_custom_file_properties(path):
     """
     Retrieves all custom file properties of a single file (be it a part or assembly) and possibly edit some custom propreties of that file
