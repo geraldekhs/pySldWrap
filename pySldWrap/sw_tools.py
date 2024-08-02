@@ -2,8 +2,8 @@ import shutil
 from pathlib import Path
 import win32com.client
 import pythoncom
-import pandas
-
+import pandas as pd
+import os
 
 class SW():
     
@@ -175,7 +175,7 @@ def activate_doc(name):
 def get_custom_file_properties(path):
     """
     Retrieves all custom file properties of a single file (be it a part or assembly) and possibly edit some custom propreties of that file
-    
+
     """
     
     model = open_part(path) 
@@ -187,11 +187,9 @@ def get_custom_file_properties(path):
 
     num_properties = custom_property_manager.Count
 
-    # *Steps
-    # GetAll3: gets all custom properties; returns array of values for each property
-    # GetType2: for each custom property, print its name, type, and evaluated value
-
     '''
+    These are system objects passed by reference, allowing the method to modify the orginal value.
+
     Arg1: Property Names
     Arg2: Property Types
     Arg3: Property Values
@@ -208,7 +206,43 @@ def get_custom_file_properties(path):
     # Call the GetAll3 function
     result = custom_property_manager.GetAll3(arg1, arg2, arg3, arg4, arg5)
 
-    return arg1, arg2, arg3, arg4, arg5
+    return [arg1, arg2, arg3, arg4, arg5]
+
+def export_custom_file_properties(custom_file_properties):
+    '''
+    Gets args (arrays of values) to export to excel
+    Excel file can be modified, then data is used to modify file properties in part files
+    '''
+
+    property_names = custom_file_properties[0].value
+    property_values = custom_file_properties[2].value
+
+    df = pd.DataFrame({
+        'Property Names': property_names,
+        'Property Values': property_values
+    })
+
+    # transpose removes indexed row
+    df = df.transpose()
+    column_list = [24,25,26,27,0] + [i for i in range(1,24)]
+    df = df.reindex(columns=column_list)
+
+    exported_file_name = 'custom_properties.xlsx'
+
+    if os.path.exists(exported_file_name):
+        # If it exists, read the existing file and append the new data
+        existing_df = pd.read_excel(exported_file_name)
+        combined_df = pd.concat([existing_df, df.iloc[1:]])  # skip the first row
+        combined_df.to_excel(exported_file_name, index=False)
+    else:
+        # If it doesn't exist, create a new file
+        df.to_excel(exported_file_name, index=False)
+
+
+def directly_modify_file_properties(column_names: list , final_value):
+    '''
+    Input columns names that you want to modify with a single specfic change
+    '''
 
 
 def save_model(model):
