@@ -214,20 +214,22 @@ def export_custom_file_properties(custom_file_properties):
     })
 
     # transpose removes indexed row
-    df = df.transpose()
-    column_list = [24,25,26,27,0] + [i for i in range(1,24)]
-    df = df.reindex(columns=column_list)
+    df = df.reset_index(drop=True)
+    row_list = [24,25,26,27,0] + [i for i in range(1,24)]
+    df = df.reindex(row_list).reset_index(drop=True)
+    df_transposed = df.values.T
+    df = pd.DataFrame(df_transposed, columns=df.values.T[0])
 
     exported_file_name = 'custom_properties.xlsx'
 
     if os.path.exists(exported_file_name):
         # If it exists, read the existing file and append the new data
         existing_df = pd.read_excel(exported_file_name)
-        combined_df = pd.concat([existing_df, df.iloc[1:]])  # skip the first row
+        combined_df = pd.concat([existing_df, df.iloc[1:]],ignore_index=True)  # skip the first row
         combined_df.to_excel(exported_file_name, index=False)
     else:
         # If it doesn't exist, create a new file
-        df.to_excel(exported_file_name, index=False)
+        df.to_excel(exported_file_name, index=False, header=False)
 
 
 def directly_modify_file_properties(column_names: list , final_value):
