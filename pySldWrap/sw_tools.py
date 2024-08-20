@@ -163,13 +163,11 @@ def activate_doc(name):
     arg1 = win32com.client.VARIANT(pythoncom.VT_BYREF | pythoncom.VT_I4, 0)
     return sw.app.ActivateDoc3(name, False, 2, arg1)
 
-def get_custom_file_properties(path):
+def get_custom_file_properties(model):
     """
     Retrieves all custom file properties of a single file (be it a part or assembly) and possibly edit some custom propreties of that file
-
-    """
     
-    model = open_part(path) 
+    """
 
     # Custom properties can be defined at the document or configuration level
     # Default configuration is being used
@@ -198,6 +196,8 @@ def get_custom_file_properties(path):
     result = custom_property_manager.GetAll3(arg1, arg2, arg3, arg4, arg5)
 
     return [arg1, arg2, arg3, arg4, arg5]
+
+
 
 def export_custom_file_properties(custom_file_properties):
     '''
@@ -231,11 +231,74 @@ def export_custom_file_properties(custom_file_properties):
         # If it doesn't exist, create a new file
         df.to_excel(exported_file_name, index=False, header=False)
 
+def set_file_properties(model, excel_values):
+    """
+    Sets all custom file properties of a single file (be it a part or assembly) to values obtained from an excel BOM    
+    """
 
-def directly_modify_file_properties(column_names: list , final_value):
+    # Custom properties can be defined at the document or configuration level
+    # Default configuration is being used
+    configuration = 'Default'
+    custom_property_manager = model.Extension.CustomPropertyManager(configuration)
+
+    #Get custom property names from solidworks file
+    #should this be stored in memory or gotten from a template or something???? might make it very slow
+    #this is a tuple
+    custom_file_properties_name = get_custom_file_properties(model)[0].value
+
+    #Call the Set2 function and modify each custom property one by one
+    #excel values refers to a list/dictionary/some data structure of all property values
+    for name,value in zip(custom_file_properties_name,excel_values):
+        custom_property_manager.Set2(name, value)
+        save_model(model)
+
+    
     '''
-    Input columns names that you want to modify with a single specfic change
+    library
+    - set file properties
+    - export file properties
+    - get custom file properties
+
+
+    script
+    - read data from excel file
+    - get list of file names
+    - open file if its a file, open assembly if its an assembly
+    - set file properties
+    - close file
+    
     '''
+
+
+    return
+
+
+def modify_file_properties_from_excel(filename):
+    '''
+    Reads data from an existing BOM in an excel file
+    Reads names and values of file properties in excel file
+    Checks these against names and values in part/assembly files
+    Overwrites them
+    '''
+
+
+    '''
+    library
+    - set file properties
+    - export file properties
+    - get custom file properties
+
+
+    script
+    - read data from excel file
+    - get list of file names
+    - open file if its a file, open assembly if its an assembly
+    - set file properties
+    - close file
+    
+    '''
+
+
 
 
 def save_model(model):
