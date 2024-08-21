@@ -242,14 +242,23 @@ def set_file_properties(model, excel_values):
     custom_property_manager = model.Extension.CustomPropertyManager(configuration)
 
     #Get custom property names from solidworks file
-    #should this be stored in memory or gotten from a template or something???? might make it very slow
-    #this is a tuple
-    custom_file_properties_name = get_custom_file_properties(model)[0].value
+    #However certain property names are set by the system and thus should be skipped
+    # !Should this be stored in memory or gotten from a template or something???? might make it very slow
 
-    #Call the Set2 function and modify each custom property one by one
+    # Strings to skip
+    skip_strings = {'Enterprise Part No.', 'Title', 'V_Name', 'Revision', 'Creation Date', 'DrawnDate','Material', 'CheckedDate', 'EngAppDate', 'MfgAppDate', 'QAAppDate', 'Remarks'}
+
+    # Filter to get the correct property names to be modified
+    custom_file_properties = tuple(s for s in get_custom_file_properties(model)[0].value if s not in skip_strings)
+
+    #Use the Set2 function to modify each custom property one by one, followed by saving
     #excel values refers to a list/dictionary/some data structure of all property values
-    for name,value in zip(custom_file_properties_name,excel_values):
+    # print(custom_file_properties, len(custom_file_properties))
+    # print(excel_values, len(excel_values))
+
+    for name,value in zip(custom_file_properties,excel_values):
         custom_property_manager.Set2(name, value)
+        #save after each modification to a custom property
         save_model(model)
 
     
@@ -271,7 +280,6 @@ def set_file_properties(model, excel_values):
 
 
     return
-
 
 def modify_file_properties_from_excel(filename):
     '''
