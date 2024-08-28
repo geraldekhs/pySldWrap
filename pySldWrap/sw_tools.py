@@ -165,13 +165,18 @@ def activate_doc(name):
 
 def get_custom_file_properties(model):
     """
-    Retrieves all custom file properties of a single file (be it a part or assembly) and returns list with some arguments related to the property. 
-    
+    Retrieves file properties of 1 part file or assembly.
+
+    Args:
+        model: The Solidworks model object representing a part or assembly
+     
+    Returns:
+        List with some arguments related to the property.     
     """
 
-    # Custom properties can be defined at the document or configuration level
     # Default configuration is being used
     configuration = 'Default'
+    # Custom properties can be defined at the document or configuration level
     custom_property_manager = model.Extension.CustomPropertyManager(configuration)
 
     num_properties = custom_property_manager.Count
@@ -184,7 +189,6 @@ def get_custom_file_properties(model):
     Arg3: Property Values
     Arg4: Is property resolved?
     Arg5: Is property linked? 
-    
     '''
     arg1 = win32com.client.VARIANT(pythoncom.VT_BYREF | pythoncom.VT_VARIANT, [])
     arg2 = win32com.client.VARIANT(pythoncom.VT_BYREF | pythoncom.VT_VARIANT, [])
@@ -192,7 +196,6 @@ def get_custom_file_properties(model):
     arg4 = win32com.client.VARIANT(pythoncom.VT_BYREF | pythoncom.VT_VARIANT, [])
     arg5 = win32com.client.VARIANT(pythoncom.VT_BYREF | pythoncom.VT_VARIANT, [])
 
-    # Call the GetAll3 function
     result = custom_property_manager.GetAll3(arg1, arg2, arg3, arg4, arg5)
 
     return [arg1, arg2, arg3, arg4, arg5]
@@ -201,8 +204,9 @@ def get_custom_file_properties(model):
 
 def export_custom_file_properties(custom_file_properties):
     '''
-    Gets args (arrays of values) to export to excel
-    Excel file can be modified, then data is used to modify file properties in part files
+    Gets args (arrays of values) to export to excel. Excel file can be modified, then data is used to modify file properties in part files.
+
+    Unused as solidworks can export file properties to an excel BOM.
     '''
 
     property_names = custom_file_properties[0].value
@@ -231,10 +235,14 @@ def export_custom_file_properties(custom_file_properties):
         # If it doesn't exist, create a new file
         df.to_excel(exported_file_name, index=False, header=False)
 
+
 def set_file_properties(model, excel_values):
     """
-    Sets all custom file properties of a single file (be it a part or assembly) to values obtained from an excel BOM    
+    Sets all custom file properties of a single part or assembly file to values obtained from an excel BOM.
+    
+
     """
+
 
     # Custom properties can be defined at the document or configuration level
     # Default configuration is being used
@@ -253,8 +261,6 @@ def set_file_properties(model, excel_values):
 
     #Use the Set2 function to modify each custom property one by one, followed by saving
     #excel values refers to a list/dictionary/some data structure of all property values
-    # print(custom_file_properties, len(custom_file_properties))
-    # print(excel_values, len(excel_values))
 
     for name,value in zip(custom_file_properties,excel_values):
         custom_property_manager.Set2(name, value)
@@ -262,34 +268,6 @@ def set_file_properties(model, excel_values):
         save_model(model)
 
     return
-
-def modify_file_properties_from_excel(filename):
-    '''
-    Reads data from an existing BOM in an excel file
-    Reads names and values of file properties in excel file
-    Checks these against names and values in part/assembly files
-    Overwrites them
-    '''
-
-
-    '''
-    library
-    - set file properties
-    - export file properties
-    - get custom file properties
-
-
-    script
-    - read data from excel file
-    - get list of file names
-    - open file if its a file, open assembly if its an assembly
-    - set file properties
-    - close file
-    
-    '''
-
-
-
 
 def save_model(model):
 

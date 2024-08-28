@@ -51,6 +51,9 @@ import win32gui
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
+import datetime
+import numpy as np
+
 
 
 def reload_and_connect():
@@ -193,8 +196,66 @@ def extract_final_state(bom_file):
     final_bom_df = pd.read_excel(bom_file)
     return final_bom_df
 
-# def compare_dataframes(df1, df2):
-#     return df1.compare(df2)
+
+def modify_sw_file_properties(directory, df_of_modified_files):
+    '''
+    Reads from a dataframe containing names of partfiles/assemblies whose file properties have been modified
+    Iterates through these files based on a user provided directory
+    
+
+    Reads names and values of file properties in excel file
+    Checks these against names and values in part/assembly files
+    Overwrites them
+    '''
+    # *create a for loop that does this for every name in the title column:
+    # *read the title and associate it with a name of a part file or assembly; if title contains assembly then its an assembly; if not its not
+    # *open the specified file or assembly
+    # *get the file properties in that part file/assembly
+    # *replace the file properties in the part file/assembly with those in the excel file
+
+    # Generate a new log file name
+    logfile_count = 1
+    while os.path.exists(f"Solidworks_Log_File{logfile_count}.txt"):
+        logfile_count += 1
+    logfile_name = f"Solidworks_Log_File{logfile_count}.txt"
+
+    column_list = list(df_of_modified_files.loc[:,"Title"])
+    #accesses the first excel row to retrieve names of rows
+    excel_df_2 = df_of_modified_files.set_index(df_of_modified_files.columns[0])
+
+    skip_columns = {'Enterprise Part No.', 'Title', 'V_Name', 'Revision', 'Creation Date', 'DrawnDate', 'Material', 'CheckedDate', 'EngAppDate', 'MfgAppDate', 'QAAppDate', 'Remarks'}
+    new_excel_df = excel_df_2.drop(columns=skip_columns, errors='ignore')
+
+    for i in range(df_of_modified_files.shape[0]):
+        #checking if its a part file or assembly file
+        if ("Assembly" or "Assem") in column_list[i]:
+            filename = column_list[i] + '.SLDASM'
+        else:
+            filename = column_list[i] + '.SLDPRT'
+
+        property_value_list = list(new_excel_df.loc[column_list[i],:])
+
+        print(property_value_list[5],type(property_value_list[5]))
+
+        property_value_list = [str(value) if pd.notna(value) else '--' for value in list(new_excel_df.loc[column_list[i],:])]
+
+        print('proplist;',property_value_list)
+
+        #open part/assembly and get custom file properties
+        try:
+            part_path = os.path.join(directory, filename)
+            print(part_path)
+            model = sw_tools.open_part(part_path)
+            sw_tools.set_file_properties(model,property_value_list)
+            sw_tools.close(part_path.split('\\')[-1])
+        
+        # Create log file for error handling
+        except Exception as e:
+            error_timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            print(f'Error processing {filename}: {e}. See {logfile_name} for details.')
+            with open(logfile_name, 'a') as f:
+                f.write(f"{error_timestamp} - {part_path} - Error: {e}\n")  
+ 
 
 def main():
     # Assume BOM is generated already
@@ -211,6 +272,9 @@ def main():
     # Script detects closure of excel file and extracts final BOM file state. #! ask GPT if this is possible
     # Script compares changes between initial state and final state of dataframe and updates any rows that have been changed.
     # Script begins opening solidworks files and updating file properties.
+
+    importlib.reload(sw_tools)
+    sw_tools.connect_sw("2024")  # open connection and pass Solidworks version
 
     working_directory = prompt_user_for_path('Select your assembly/part file directory','Directory')
     bom_file = prompt_user_for_path('Select the BOM file','File')
@@ -237,20 +301,9 @@ def main():
 
     changes = final_bom_df[~final_bom_df.eq(initial_bom_df).all(axis=1)]
 
+    shortened_working_directory = './' + working_directory.split('/')[-1]
 
-
-
-    # print('a')
-    # print(changes.iloc[:, 3:])
-
-
-    # ! ABOVE ALL DONE, IMPLEMENT WRITING EXCEL CHANGES TO SOLIDWORKS FILES
-
-    # Script begins opening solidworks files and updating file properties.
-    # update_solidworks_files(working_directory, changes)
-
-
-
+    modify_sw_file_properties(shortened_working_directory,changes)
 
 
 
