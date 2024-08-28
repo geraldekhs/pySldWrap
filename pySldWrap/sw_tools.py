@@ -165,7 +165,7 @@ def activate_doc(name):
 
 def get_custom_file_properties(model):
     """
-    Retrieves all custom file properties of a single file (be it a part or assembly) and possibly edit some custom propreties of that file
+    Retrieves all custom file properties of a single file (be it a part or assembly) and returns list with some arguments related to the property. 
     
     """
 
@@ -260,24 +260,6 @@ def set_file_properties(model, excel_values):
         custom_property_manager.Set2(name, value)
         #save after each modification to a custom property
         save_model(model)
-
-    
-    '''
-    library
-    - set file properties
-    - export file properties
-    - get custom file properties
-
-
-    script
-    - read data from excel file
-    - get list of file names
-    - open file if its a file, open assembly if its an assembly
-    - set file properties
-    - close file
-    
-    '''
-
 
     return
 
