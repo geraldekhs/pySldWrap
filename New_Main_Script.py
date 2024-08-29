@@ -14,12 +14,15 @@
         * Writes the values in the excel file to the SOLIDWORKS part files and assemblies.
 
 # * Script Usage
+* Generate a Solidworks BOM file.
 * Run the script/exe file.
-* A file selection box for the BOM will appear.
-* Select the BOM file in the file selection box.
-* Make changes to the BOM file.
-* ????????
-# ! CLEAR UP THE STEPS ON HOW THIS WORKS
+* A folder selection box for the part/assembly file directory will appear.
+* Select the directory.
+* A file selection box for the excel BOM location will appear.
+* Select the BOM file. This will open the excel BOM.
+* Make changes to the BOM file. DO NOT CLOSE IT.
+* Once changes are complete, close the BOM file. The script will detect the closure and begin writing changes from the excel file to the Solidworks part and assemblies.
+
 
 # * Main Use Cases
 Use Case 1
@@ -221,7 +224,7 @@ def modify_sw_file_properties(directory, df_of_modified_files):
 
     column_list = list(df_of_modified_files.loc[:,"Title"])
     #accesses the first excel row to retrieve names of rows
-    excel_df_2 = df_of_modified_files.set_index(df_of_modified_files.columns[0])
+    excel_df_2 = df_of_modified_files.set_index(df_of_modified_files.columns[1])
 
     skip_columns = {'Enterprise Part No.', 'Title', 'V_Name', 'Revision', 'Creation Date', 'DrawnDate', 'Material', 'CheckedDate', 'EngAppDate', 'MfgAppDate', 'QAAppDate', 'Remarks'}
     new_excel_df = excel_df_2.drop(columns=skip_columns, errors='ignore')
@@ -256,6 +259,30 @@ def modify_sw_file_properties(directory, df_of_modified_files):
             with open(logfile_name, 'a') as f:
                 f.write(f"{error_timestamp} - {part_path} - Error: {e}\n")  
  
+
+def compare_dataframes(initial_df, final_df):
+    # Fill NaN values with a consistent placeholder (e.g., an empty string)
+    initial_df = initial_df.fillna('')
+    final_df = final_df.fillna('')
+
+    # Apply strip only to object columns (string columns)
+    str_cols_initial = initial_df.select_dtypes(include=['object']).columns
+    str_cols_final = final_df.select_dtypes(include=['object']).columns
+
+    initial_df[str_cols_initial] = initial_df[str_cols_initial].applymap(lambda x: x.strip() if isinstance(x, str) else x)
+    final_df[str_cols_final] = final_df[str_cols_final].applymap(lambda x: x.strip() if isinstance(x, str) else x)
+
+    # Compare the two DataFrames
+    differences = initial_df.ne(final_df)
+    
+    # Find the rows where any column is different
+    changed_rows = differences.any(axis=1)
+    
+    # Get the subset of rows from final_df where changes occurred
+    changed_data = final_df.loc[changed_rows]
+    
+    return changed_data
+
 
 def main():
     # Assume BOM is generated already
@@ -299,11 +326,34 @@ def main():
     final_bom_df = extract_final_state(bom_file)
     # changes = compare_dataframes(initial_bom_df, final_bom_df)
 
-    changes = final_bom_df[~final_bom_df.eq(initial_bom_df).all(axis=1)]
+    # print('initial_bom:', initial_bom_df.iloc[:, 4:])
 
-    shortened_working_directory = './' + working_directory.split('/')[-1]
+    # print('final bom:', final_bom_df.iloc[:, 4:])
 
-    modify_sw_file_properties(shortened_working_directory,changes)
+    # changes = final_bom_df[~final_bom_df.eq(initial_bom_df).all(axis=1)]
+
+
+    # # Create a Boolean mask where values differ between initial_df and final_df
+    # mask = (initial_bom_df != final_bom_df).any(axis=1)
+
+    # # Use the mask to filter initial_df for rows with changes
+    # changes = final_bom_df[mask]
+
+    # print('changes:',changes)
+
+
+    # Compare DataFrames to find the changes
+    changes = compare_dataframes(initial_bom_df, final_bom_df)
+
+    # Proceed with the rest of your logic
+    print('Changes detected:', changes)
+    if not changes.empty:
+        modify_sw_file_properties(working_directory, changes)
+    
+
+    # shortened_working_directory = './' + working_directory.split('/')[-1]
+
+    # modify_sw_file_properties(shortened_working_directory,changes)
 
 
 
