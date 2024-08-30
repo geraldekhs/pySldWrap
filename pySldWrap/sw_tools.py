@@ -27,6 +27,8 @@ def connect_sw(sw_year):
 
     sw.set_sw(sw_app)
 
+    return sw_app
+
 
 class EditPart():
     """
@@ -163,7 +165,7 @@ def activate_doc(name):
     arg1 = win32com.client.VARIANT(pythoncom.VT_BYREF | pythoncom.VT_I4, 0)
     return sw.app.ActivateDoc3(name, False, 2, arg1)
 
-def get_custom_file_properties(model):
+def get_custom_file_properties(model,custom_property_manager):
     """
     Retrieves file properties of 1 part file or assembly.
 
@@ -174,12 +176,12 @@ def get_custom_file_properties(model):
         List with some arguments related to the property.     
     """
 
-    # Default configuration is being used
-    configuration = 'Default'
-    # Custom properties can be defined at the document or configuration level
-    custom_property_manager = model.Extension.CustomPropertyManager(configuration)
+    # # Default configuration is being used
+    # configuration = 'Default'
+    # # Custom properties can be defined at the document or configuration level
+    # custom_property_manager = model.Extension.CustomPropertyManager(configuration)
 
-    num_properties = custom_property_manager.Count
+    # num_properties = custom_property_manager.Count
 
     '''
     These are system objects passed by reference, allowing the method to modify the orginal value.
@@ -236,35 +238,77 @@ def export_custom_file_properties(custom_file_properties):
         df.to_excel(exported_file_name, index=False, header=False)
 
 
-def set_file_properties(model, excel_values):
+def set_file_properties(model, excel_values, sld_app, sFileName):
     """
     Sets all custom file properties of a single part or assembly file to values obtained from an excel BOM.
     
-
     """
 
 
-    # Custom properties can be defined at the document or configuration level
-    # Default configuration is being used
-    configuration = 'Default'
-    custom_property_manager = model.Extension.CustomPropertyManager(configuration)
+    # # Custom properties can be defined at the document or configuration level
+    # # Default configuration is being used
+    # configuration = 'Default'
+    # custom_property_manager = model.Extension.CustomPropertyManager(configuration)
+
+
+    
+    # Get the active configuration name
+    active_config_name = sld_app.GetActiveConfigurationName(sFileName)
+
+    # Get the ModelDoc2 object
+    model2 = sld_app.ActiveDoc
+
+    # Get the Configuration object
+    configuration = model2.GetConfigurationByName(active_config_name)
+
+
+    import time
+
+    for attempt in range(5):
+        try:
+            custom_property_manager = configuration.CustomPropertyManager
+            break  # Exit the loop if successful
+        except Exception as e:
+            print(f"Error on attempt {attempt+1}: {e}")
+            if attempt < 4:  # Wait only if not the last attempt
+                time.sleep(1)  # Adjust the delay as needed
+            else:
+                raise
+
+    # Get the CustomPropertyManager
+    # try:
+    #     custom_property_manager = configuration.CustomPropertyManager
+    # except Exception as e:
+
 
     #Get custom property names from solidworks file
     #However certain property names are set by the system and thus should be skipped
-    # !Should this be stored in memory or gotten from a template or something???? might make it very slow
 
     # Strings to skip
-    skip_strings = {'Enterprise Part No.', 'Title', 'V_Name', 'Revision', 'Creation Date', 'DrawnDate','Material', 'CheckedDate', 'EngAppDate', 'MfgAppDate', 'QAAppDate', 'Remarks'}
+    skip_strings = {'S/N','Enterprise Part No.', 'SurfaceFinish', 'Project', 'Title', 'V_Name', 'Revision', 'Creation Date', 'DrawnDate', 'Material', 'CheckedDate', 'EngAppDate', 'MfgAppDate', 'QAAppDate', 'Remarks', 'DrawnBy', 'CheckedBy', 'EngApproval', 'MfgApproval', 'QAApproval'}
 
     # Filter to get the correct property names to be modified
-    custom_file_properties = tuple(s for s in get_custom_file_properties(model)[0].value if s not in skip_strings)
+    custom_file_properties = tuple(s for s in get_custom_file_properties(model,custom_property_manager)[0].value if s not in skip_strings)
+
+
 
     #Use the Set2 function to modify each custom property one by one, followed by saving
     #excel values refers to a list/dictionary/some data structure of all property values
 
-    for name,value in zip(custom_file_properties,excel_values):
-        custom_property_manager.Set2(name, value)
+
+    # for name,value in zip(custom_file_properties,excel_values):
+    #     print('sldworksprops:' + str(custom_file_properties)+'\n')
+    #     print('excelvalues:' + str(excel_values)+'\n')
+    #     print()
+
+    # print(excel_values)
+
+    for key,value in excel_values.items():
+        custom_property_manager.Set2(key,value)
+
+        # custom_property_manager.Set2(name, value)
         #save after each modification to a custom property
+
         save_model(model)
 
     return

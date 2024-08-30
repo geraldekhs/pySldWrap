@@ -72,7 +72,6 @@ def retrieve_file_properties_single_part(part_path):
     Retrieve custom file properties for a single part
     '''
     reload_and_connect()
-    part_path = './Test_files\LS3.SLDPRT'
     model = sw_tools.open_part(part_path)  # open the model, link is returned
     custom_properties = sw_tools.get_custom_file_properties(part_path)
     a = sw_tools.export_custom_file_properties(custom_properties)
@@ -137,6 +136,7 @@ class ExcelCloseHandler(FileSystemEventHandler):
         if event.src_path == self.path:
             self.file_closed = True
 
+
 def open_excel_file(bom_file):
     """
     Opens the BOM file in Excel.
@@ -144,13 +144,10 @@ def open_excel_file(bom_file):
     Args:
         bom_file (str): Path to the BOM Excel file.
     """
-    print('0')
     excel = win32com.client.Dispatch("Excel.Application")
-    print('1')
     excel.Visible = True  # Make Excel visible if needed
-    print('2')
     workbook = excel.Workbooks.Open(bom_file)
-    print('3')  
+    print('File opened sucessfully.')
 
     return excel, workbook
 
@@ -170,10 +167,8 @@ def wait_for_file_to_close(bom_file):
     observer.start()
 
     try:
-        print('c')
         while not event_handler.file_closed:
             time.sleep(0.1)
-            print('b')
     finally:
         observer.stop()
         observer.join()
@@ -200,66 +195,6 @@ def extract_final_state(bom_file):
     return final_bom_df
 
 
-def modify_sw_file_properties(directory, df_of_modified_files):
-    '''
-    Reads from a dataframe containing names of partfiles/assemblies whose file properties have been modified
-    Iterates through these files based on a user provided directory
-    
-
-    Reads names and values of file properties in excel file
-    Checks these against names and values in part/assembly files
-    Overwrites them
-    '''
-    # *create a for loop that does this for every name in the title column:
-    # *read the title and associate it with a name of a part file or assembly; if title contains assembly then its an assembly; if not its not
-    # *open the specified file or assembly
-    # *get the file properties in that part file/assembly
-    # *replace the file properties in the part file/assembly with those in the excel file
-
-    # Generate a new log file name
-    logfile_count = 1
-    while os.path.exists(f"Solidworks_Log_File{logfile_count}.txt"):
-        logfile_count += 1
-    logfile_name = f"Solidworks_Log_File{logfile_count}.txt"
-
-    column_list = list(df_of_modified_files.loc[:,"Title"])
-    #accesses the first excel row to retrieve names of rows
-    excel_df_2 = df_of_modified_files.set_index(df_of_modified_files.columns[1])
-
-    skip_columns = {'Enterprise Part No.', 'Title', 'V_Name', 'Revision', 'Creation Date', 'DrawnDate', 'Material', 'CheckedDate', 'EngAppDate', 'MfgAppDate', 'QAAppDate', 'Remarks'}
-    new_excel_df = excel_df_2.drop(columns=skip_columns, errors='ignore')
-
-    for i in range(df_of_modified_files.shape[0]):
-        #checking if its a part file or assembly file
-        if ("Assembly" or "Assem") in column_list[i]:
-            filename = column_list[i] + '.SLDASM'
-        else:
-            filename = column_list[i] + '.SLDPRT'
-
-        property_value_list = list(new_excel_df.loc[column_list[i],:])
-
-        print(property_value_list[5],type(property_value_list[5]))
-
-        property_value_list = [str(value) if pd.notna(value) else '--' for value in list(new_excel_df.loc[column_list[i],:])]
-
-        print('proplist;',property_value_list)
-
-        #open part/assembly and get custom file properties
-        try:
-            part_path = os.path.join(directory, filename)
-            print(part_path)
-            model = sw_tools.open_part(part_path)
-            sw_tools.set_file_properties(model,property_value_list)
-            sw_tools.close(part_path.split('\\')[-1])
-        
-        # Create log file for error handling
-        except Exception as e:
-            error_timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            print(f'Error processing {filename}: {e}. See {logfile_name} for details.')
-            with open(logfile_name, 'a') as f:
-                f.write(f"{error_timestamp} - {part_path} - Error: {e}\n")  
- 
-
 def compare_dataframes(initial_df, final_df):
     # Fill NaN values with a consistent placeholder (e.g., an empty string)
     initial_df = initial_df.fillna('')
@@ -284,6 +219,92 @@ def compare_dataframes(initial_df, final_df):
     return changed_data
 
 
+def modify_sw_file_properties(directory, df_of_modified_files, sld_app):
+    '''
+    Reads from a dataframe containing names of partfiles/assemblies whose file properties have been modified
+    Iterates through these files based on a user provided directory
+    
+
+    Reads names and values of file properties in excel file
+    Checks these against names and values in part/assembly files
+    Overwrites them
+    '''
+    # *create a for loop that does this for every name in the title column:
+    # *read the title and associate it with a name of a part file or assembly; if title contains assembly then its an assembly; if not its not
+    # *open the specified file or assembly
+    # *get the file properties in that part file/assembly
+    # *replace the file properties in the part file/assembly with those in the excel file
+
+    # Generate a new log file name
+    logfile_count = 1
+    while os.path.exists(f"Solidworks_Log_File{logfile_count}.txt"):
+        logfile_count += 1
+    logfile_name = f"Solidworks_Log_File{logfile_count}.txt"
+
+
+    
+
+    names_of_modified_files = list(df_of_modified_files.loc[:,"Title"])
+    new_names_of_modified_files = [string.replace('\n', '') for string in names_of_modified_files]
+
+    # #accesses the first excel row to retrieve names of rows
+    excel_df_2 = df_of_modified_files.set_index(df_of_modified_files.columns[1])
+
+    skip_columns = {'S/N','Enterprise Part No.', 'SurfaceFinish', 'Project', 'Title', 'V_Name', 'Revision', 'Creation Date', 'DrawnDate', 'Material', 'CheckedDate', 'EngAppDate', 'MfgAppDate', 'QAAppDate', 'Remarks', 'DrawnBy', 'CheckedBy', 'EngApproval', 'MfgApproval', 'QAApproval'}
+
+    new_excel_df = excel_df_2.drop(columns=skip_columns, errors='ignore')
+
+    # print(new_excel_df)
+
+    # new_excel_df = df_of_modified_files.drop(columns=skip_columns, errors='ignore')
+
+    # print('excel df:',new_excel_df)
+
+
+    #get seperate property_value_list for each modified file
+    for i in range(df_of_modified_files.shape[0]):
+        #checking if its a part file or assembly file
+
+        if "Assembly" in str(new_names_of_modified_files[i]) or "Assem" in str(new_names_of_modified_files[i]):
+            filename = new_names_of_modified_files[i] + '.SLDASM'
+        else:
+            filename = new_names_of_modified_files[i] + '.SLDPRT'
+
+        # # Assuming 'new_excel_df' is your DataFrame
+        # new_excel_df['Index_Column'] = new_excel_df.index
+
+        # # Reorder the columns so that 'Index_Column' is the first column
+        # new_excel_df = new_excel_df[['Index_Column'] + [col for col in new_excel_df.columns if col != 'Index_Column']]
+
+        # Now you can extract the property_value_list as before
+
+        column_names = new_excel_df.columns
+        property_value_list = list(new_excel_df.loc[names_of_modified_files[i], :])
+
+        property_value_dict = dict(zip(column_names, property_value_list))
+
+        # print(property_value_dict)
+
+
+        # open part/assembly and get custom file properties
+        try:
+            part_path = os.path.join(directory, filename)
+            print(part_path)
+            if "Assembly" in filename or "Assem" in filename:
+                model = sw_tools.open_assembly(part_path)
+            else:
+                model = sw_tools.open_part(part_path)
+            sw_tools.set_file_properties(model,property_value_dict,sld_app,part_path)
+            sw_tools.close(part_path.split('\\')[-1])
+            model = None
+        
+        # Create log file for error handling
+        except Exception as e:
+            error_timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            print(f'Error processing {filename}: {e}. See {logfile_name} for details.')
+            with open(logfile_name, 'a') as f:
+                f.write(f"{error_timestamp} - {part_path} - Error: {e}\n")  
+
 def main():
     # Assume BOM is generated already
     # Run script
@@ -301,7 +322,7 @@ def main():
     # Script begins opening solidworks files and updating file properties.
 
     importlib.reload(sw_tools)
-    sw_tools.connect_sw("2024")  # open connection and pass Solidworks version
+    sld_app = sw_tools.connect_sw("2024")  # open connection and pass Solidworks version
 
     working_directory = prompt_user_for_path('Select your assembly/part file directory','Directory')
     bom_file = prompt_user_for_path('Select the BOM file','File')
@@ -345,15 +366,18 @@ def main():
     # Compare DataFrames to find the changes
     changes = compare_dataframes(initial_bom_df, final_bom_df)
 
-    # Proceed with the rest of your logic
-    print('Changes detected:', changes)
-    if not changes.empty:
-        modify_sw_file_properties(working_directory, changes)
+    modify_sw_file_properties(working_directory,changes,sld_app)
+
+
+#     # Proceed with the rest of your logic
+#     print('Changes detected:', changes)
+#     if not changes.empty:
+#         modify_sw_file_properties(working_directory, changes)
     
 
-    # shortened_working_directory = './' + working_directory.split('/')[-1]
+#     # shortened_working_directory = './' + working_directory.split('/')[-1]
 
-    # modify_sw_file_properties(shortened_working_directory,changes)
+#     # modify_sw_file_properties(shortened_working_directory,changes)
 
 
 

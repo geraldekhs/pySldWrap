@@ -1,0 +1,2 @@
+2024-08-30 10:33:44 - C:/Users/Gerald/OneDrive - Singapore University of Technology and Design/Desktop/Kabam Internship/Projects/Solidworks Wrapper Testing/pySldWrap/Test_files\Bottom Frame.SLDPRT - Error: 'NoneType' object has no attribute 'CustomPropertyManager'
+2024-08-30 10:34:04 - C:/Users/Gerald/OneDrive - Singapore University of Technology and Design/Desktop/Kabam Internship/Projects/Solidworks Wrapper Testing/pySldWrap/Test_files\CSHBT-SUSTBS-M3-8.SLDPRT - Error: 'NoneType' object has no attribute 'CustomPropertyManager'
