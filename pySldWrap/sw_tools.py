@@ -165,6 +165,11 @@ def activate_doc(name):
     arg1 = win32com.client.VARIANT(pythoncom.VT_BYREF | pythoncom.VT_I4, 0)
     return sw.app.ActivateDoc3(name, False, 2, arg1)
 
+
+'''
+Added function
+
+'''
 def get_custom_file_properties(model,custom_property_manager):
     """
     Retrieves file properties of 1 part file or assembly.
@@ -203,7 +208,9 @@ def get_custom_file_properties(model,custom_property_manager):
     return [arg1, arg2, arg3, arg4, arg5]
 
 
-
+'''
+Dont use this
+'''
 def export_custom_file_properties(custom_file_properties):
     '''
     Gets args (arrays of values) to export to excel. Excel file can be modified, then data is used to modify file properties in part files.
@@ -236,6 +243,7 @@ def export_custom_file_properties(custom_file_properties):
     else:
         # If it doesn't exist, create a new file
         df.to_excel(exported_file_name, index=False, header=False)
+
 
 
 def set_file_properties(model, excel_values, sld_app, sFileName):
