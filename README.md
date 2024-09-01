@@ -34,12 +34,7 @@
     1. A directory selection dialog box will be opened to select the part/assembly file directory. If the dialog box is not visible, minimise your application windows until you see it.
     2. After selecting the directory, a file selection dialog box will be opened to select the excel BOM.
     3. After selecting the excel BOM, wait for the script to open the excel BOM.
-    4. Now make changes to the BOM file. <span color="red">DO NOT CLOSE IT</span>
-    
-
-    <p style="color:red">DO NOT CLOSE IT</p>
-
-     as this will start the next part of the script.
+    4. Now make changes to the BOM file. **DO NOT CLOSE THE FILE** as this will start the next part of the script.
     5. Once changes are complete, close the BOM file. The script will detect the closure and begin writing changes from the excel file to the Solidworks part and assemblies.
 
 **Stopping the script**
@@ -49,15 +44,11 @@
 * Currently, there is no way to stop the script once step 5 has started.
 
 
-# * Main Use Cases
-Use Case 1
-* Extract file properties from all parts, put them into an excel file
-* Modify the excel file
-* Extract data from modified excel file, use this to modify data in part files.
-* Generate the modified BOM (done within Solidworks and not using python)
+# Example Use Cases
+**Use Case 1**
+* Use script to add/change unique file properties to various parts in excel file
+* This is pretty much the same as adding the solidworks files; u have to type properties one by one.
 
-Use Case 2
-* Changing property values in multiple part files (currently supports same values only)
-* Eg. 10 part files need their project names changed
+**Use Case 2**
+* Use excel functions to change multiple file properties at once.
 
-'''
